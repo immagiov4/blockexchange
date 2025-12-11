@@ -20,3 +20,41 @@ function blockexchange.place_schemapart(schemapart, origin, update_light)
 
 	return pos1, pos2, data, metadata
 end
+
+-- creates a batch context for placing multiple schemaparts efficiently
+-- returns batch context object with add() and flush() methods
+function blockexchange.create_batch_placer(origin)
+	local batch = {
+		origin = origin,
+		parts = {}
+	}
+
+	function batch:add(schemapart)
+		table.insert(self.parts, schemapart)
+	end
+
+	function batch:flush()
+		if #self.parts == 0 then
+			return
+		end
+
+		for _, schemapart in ipairs(self.parts) do
+			local data, metadata = blockexchange.unpack_schemapart(schemapart)
+			local pos1 = vector.add(self.origin, {
+				x = schemapart.offset_x,
+				y = schemapart.offset_y,
+				z = schemapart.offset_z
+			})
+			local pos2 = vector.add(pos1, vector.subtract(metadata.size, 1))
+			blockexchange.deserialize_part(pos1, pos2, data, metadata, true)
+
+			if has_mapsync then
+				mapsync.mark_changed(pos1, pos2)
+			end
+		end
+
+		self.parts = {}
+	end
+
+	return batch
+end
