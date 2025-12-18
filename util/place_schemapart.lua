@@ -39,18 +39,7 @@ function blockexchange.create_batch_placer(origin)
 		end
 
 		for _, schemapart in ipairs(self.parts) do
-			local data, metadata = blockexchange.unpack_schemapart(schemapart)
-			local pos1 = vector.add(self.origin, {
-				x = schemapart.offset_x,
-				y = schemapart.offset_y,
-				z = schemapart.offset_z
-			})
-			local pos2 = vector.add(pos1, vector.subtract(metadata.size, 1))
-			blockexchange.deserialize_part(pos1, pos2, data, metadata, true)
-
-			if has_mapsync then
-				mapsync.mark_changed(pos1, pos2)
-			end
+			blockexchange.place_schemapart(schemapart, self.origin, true)
 		end
 
 		self.parts = {}
